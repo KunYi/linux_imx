@@ -496,6 +496,15 @@
 		wakeup-gpios = <&gpio6 7 0>;
 	};
 
+	egalax_i2c@2a {
+		compatible = "eeti,egalax_i2c";
+		reg = <0x2a>;
+		interrupt-parent = <&gpio6>;
+		interrupts = <7 2>;
+		wakeup-gpios = <&gpio6 7 0>;
+		int-gpios = <&gpio6 7 0>;
+	};
+
 	mag3110@0e {
 		compatible = "fsl,mag3110";
 		reg = <0x0e>;
