@@ -2,6 +2,7 @@
 #include <osl.h>
 #include <dngl_stats.h>
 #include <dhd.h>
+#include <linux/gpio.h>
 
 #ifdef CONFIG_MACH_ODROID_4210
 #include <mach/gpio.h>
@@ -13,6 +14,13 @@
 #endif
 
 struct wifi_platform_data dhd_wlan_control = {0};
+
+#define ENABLE_TINTO
+
+#if defined(ENABLE_TINTO)
+#define TINTO_WIFI_RST		204
+static int init_gpio = 0;
+#endif
 
 #ifdef CUSTOMER_OOB
 uint bcm_wlan_get_oob_irq(void)
@@ -54,17 +62,37 @@ int bcm_wlan_set_power(bool on)
 {
 	int err = 0;
 
+#if defined(ENABLE_TINTO)
+	if(init_gpio == 0) {
+		gpio_request(TINTO_WIFI_RST, "TINTO_WIFI_RST");
+		gpio_direction_output(TINTO_WIFI_RST, 0);
+		mdelay(100);
+		init_gpio = 1;
+	}
+#endif
+
 	if (on) {
 		printf("======== PULL WL_REG_ON HIGH! ========\n");
 #ifdef CONFIG_MACH_ODROID_4210
 		err = gpio_set_value(EXYNOS4_GPK1(0), 1);
 #endif
+
+#if defined(ENABLE_TINTO)
+		printk(">>>>> %s, %d: set %d to 1\n", __FILE__, __LINE__, TINTO_WIFI_RST);
+		gpio_set_value(TINTO_WIFI_RST, 1);
+#endif
+
 		/* Lets customer power to get stable */
 		mdelay(100);
 	} else {
 		printf("======== PULL WL_REG_ON LOW! ========\n");
 #ifdef CONFIG_MACH_ODROID_4210
 		err = gpio_set_value(EXYNOS4_GPK1(0), 0);
+#endif
+
+#if defined(ENABLE_TINTO)
+		printk(">>>>> %s, %d: set %d to 0\n", __FILE__, __LINE__, TINTO_WIFI_RST);
+		gpio_set_value(TINTO_WIFI_RST, 0);
 #endif
 	}
 
