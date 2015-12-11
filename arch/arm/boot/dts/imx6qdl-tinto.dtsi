@@ -154,6 +154,20 @@
 		hdmi-controller = <&hdmi_audio>;
 	};
 
+	bt_sco: bt-sco {
+		compatible = "bt-sco-codec";
+	};
+
+	sound-bt {
+		compatible = "fsl,imx6-bt",
+			     "fsl,imx-audio-bt";
+		model = "imx6-bt";
+		ssi-controller = <&ssi1>;
+		bt-controller = <&bt_sco>;
+		mux-int-port = <1>;
+		mux-ext-port = <4>;
+	};
+
 	mxcfb1: fb@0 {
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "ldb";
@@ -245,7 +259,7 @@
 
 &audmux {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_audmux>;
+	pinctrl-0 = <&pinctrl_audmux &pinctrl_audmux_bt>;
 	status = "okay";
 };
 
@@ -578,6 +592,16 @@
 			>;
 		};
 
+		/* for BT I2S audio */
+		pinctrl_audmux_bt: audmuxgrp-bt {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT20__AUD4_TXC	0x130b0
+				MX6QDL_PAD_DISP0_DAT21__AUD4_TXD	0x130b0
+				MX6QDL_PAD_DISP0_DAT22__AUD4_TXFS	0x130b0
+				MX6QDL_PAD_DISP0_DAT23__AUD4_RXD	0x130b0
+			>;
+		};
+
 		pinctrl_ecspi1: ecspi1grp {
 			fsl,pins = <
 				MX6QDL_PAD_KEY_COL1__ECSPI1_MISO	0x100b1
@@ -682,10 +706,12 @@
 				MX6QDL_PAD_DISP0_DAT17__IPU1_DISP0_DATA17  0x10
 				MX6QDL_PAD_DISP0_DAT18__IPU1_DISP0_DATA18  0x10
 				MX6QDL_PAD_DISP0_DAT19__IPU1_DISP0_DATA19  0x10
+/* for BT audio
 				MX6QDL_PAD_DISP0_DAT20__IPU1_DISP0_DATA20  0x10
 				MX6QDL_PAD_DISP0_DAT21__IPU1_DISP0_DATA21  0x10
 				MX6QDL_PAD_DISP0_DAT22__IPU1_DISP0_DATA22  0x10
 				MX6QDL_PAD_DISP0_DAT23__IPU1_DISP0_DATA23  0x10
+*/
 			>;
 		};
 
@@ -914,6 +940,19 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm1>;
 	status = "okay";
+};
+
+/* for bt audio */
+&ssi1 {
+	assigned-clocks = <&clks IMX6QDL_CLK_SSI1_SEL>;
+	assigned-clock-parents = <&clks IMX6QDL_CLK_PLL4_AUDIO_DIV>;
+	assigned-clock-rates = <0>;
+	fsl,mode = "i2s-master";
+	status = "okay";
+/*
+	fsl,mode = "i2s-slave";
+	status = "okay";
+*/
 };
 
 &ssi2 {
