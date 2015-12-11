@@ -676,4 +676,11 @@ config INPUT_ISL29023
 	  This driver can also be built as a module.  If so, the module
 	  will be called isl29023.
 
+config INPUT_CAPELLA_CM36771
+	tristate "CM36771 proximity and light sensor"
+	depends on I2C
+	help
+	  Say Y here to enable the CM36771 Proximity
+	  Sensor with Ambient Light Sensor.
+
 endif

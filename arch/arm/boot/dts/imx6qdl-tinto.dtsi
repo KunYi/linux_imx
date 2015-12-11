@@ -505,6 +505,15 @@
 		int-gpios = <&gpio6 7 0>;
 	};
 
+	cm36771_i2c@60 {
+		compatible = "capella,cm36771";
+		reg = <0x60>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <5 2>;
+		intr-pin = <&gpio4 5 0>;
+		pwr-pin = <&gpio2 31 0>;
+	};
+
 	mag3110@0e {
 		compatible = "fsl,mag3110";
 		reg = <0x0e>;
