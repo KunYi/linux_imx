@@ -51,22 +51,19 @@
 
 		/* 100 Hz to 1K Hz, 200 Hz */
 		green-led {
-			label = "tinto-green";
-			pwms = <&pwm2 1 5000000 0>;
+			pwms = <&pwm2 0 5000000>;
 			max-brightness = <255>;
 		};
 
 		/* 100 Hz to 1K Hz, 200 Hz */
 		red-led {
-			label = "tinto-red";
-			pwms = <&pwm3 1 5000000 0>;
+			pwms = <&pwm3 0 5000000>;
 			max-brightness = <255>;
 		};
 
 		/* 12.5 KHz to 33 KHz, 20 KHz */
 		whilte-led {
-			label = "tinto-white";
-			pwms = <&pwm4 1 50000 0>;
+			pwms = <&pwm4 0 50000>;
 			max-brightness = <255>;
 		};
 	};
@@ -500,7 +497,6 @@
 				MX6QDL_PAD_GPIO_7__GPIO1_IO07		0x80000000 // LED_GREEN
 				MX6QDL_PAD_GPIO_8__GPIO1_IO08		0x80000000 // LED_RED
 				MX6QDL_PAD_GPIO_9__GPIO1_IO09		0x80000000 // LED_WHITE
-				MX6QDL_PAD_GPIO_16__GPIO7_IO11		0x80000000 // TP65
 				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x80000000 // WL_RESET
 				MX6QDL_PAD_GPIO_18__GPIO7_IO13		0x80000000 // PMIC_INT_B
 				MX6QDL_PAD_GPIO_19__GPIO4_IO05		0x80000000 // SENSOR_INT
