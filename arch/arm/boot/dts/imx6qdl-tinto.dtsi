@@ -819,8 +819,6 @@
 		fsl,data-mapping = "spwg";
 		fsl,data-width = <24>;
 		status = "okay";
-		vcc-gpio = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		vcc-powerup-delay-ms = <100>;
 
 		display-timings {
 			native-mode = <&timing0>;
@@ -843,6 +841,9 @@
 		fsl,data-width = <24>;
 		primary;
 		status = "okay";
+
+		vcc-gpio = <&gpio6 8 GPIO_ACTIVE_HIGH>;
+		vcc-powerup-delay-ms = <100>;
 
 		display-timings {
 			native-mode = <&timing1>;
