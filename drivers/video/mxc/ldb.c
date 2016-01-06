@@ -29,6 +29,8 @@
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
 #include <linux/types.h>
+#include <linux/of_gpio.h>
+#include <linux/delay.h>
 #include <video/of_videomode.h>
 #include <video/videomode.h>
 #include "mxc_dispdrv.h"
@@ -89,6 +91,11 @@ struct ldb_chan {
 	int chno;
 	bool is_used;
 	bool online;
+
+	// LVDS power up control
+	int vcc_gpio;
+	int vcc_active_low;
+	int vcc_powerup_delay_ms;
 };
 
 struct ldb_data {
@@ -526,6 +533,11 @@ static int ldb_enable(struct mxc_dispdrv_handle *mddh,
 					    LDB_CH0_MODE_EN_TO_DI0;
 	}
 
+	if(gpio_is_valid(chan.vcc_gpio)) {
+		gpio_set_value(chan.vcc_gpio, !chan.vcc_active_low);
+		mdelay(chan.vcc_powerup_delay_ms);
+	}
+
 	regmap_write(ldb->regmap, ldb->ctrl_reg, ldb->ctrl);
 	return 0;
 }
@@ -550,6 +562,11 @@ static void ldb_disable(struct mxc_dispdrv_handle *mddh,
 	}
 
 	regmap_write(ldb->regmap, ldb->ctrl_reg, ldb->ctrl);
+
+	if(gpio_is_valid(ldb->chan[chno].vcc_gpio)) {
+		gpio_set_value(ldb->chan[chno].vcc_gpio, ldb->chan[chno].vcc_active_low);
+	}
+
 	return;
 }
 
@@ -667,6 +684,46 @@ static bool is_valid_crtc(struct ldb_data *ldb, enum crtc crtc,
 	return false;
 }
 
+static void ldb_powerup_gpio(struct device *dev, struct device_node *np, struct ldb_chan *chan)
+{
+	int ret;
+	enum of_gpio_flags flags;
+
+	chan->vcc_gpio = -1;
+	chan->vcc_powerup_delay_ms = 0;
+
+	chan->vcc_gpio = of_get_named_gpio_flags(np, "vcc-gpio", 0, &flags);
+	if(!gpio_is_valid(chan->vcc_gpio)) {
+		dev_err(dev, "Invalid vcc_gpio number\n");
+		return;
+	}
+
+	dev_info(dev, "ldb vcc_gpio = %d\n", chan->vcc_gpio);
+	chan->vcc_active_low = flags & OF_GPIO_ACTIVE_LOW;
+
+	ret = gpio_request(chan->vcc_gpio, "ldb-vcc-gpio");
+	if(ret) {
+		dev_err(dev, "get ldb-vcc-gpio fail\n");
+		return;
+	}
+
+	if(gpio_direction_output(chan->vcc_gpio, chan->vcc_active_low)) {
+		dev_err(dev, "set ldb-vcc-gpio direction fail\n");
+		goto err;
+	}
+
+	ret = of_property_read_u32(np, "vcc-powerup-delay-ms", &chan->vcc_powerup_delay_ms);
+	if(ret) {
+		dev_info(dev, "get vcc-power-delay-ms fail\n");
+	}
+
+	return;
+
+err:
+	gpio_free(chan->vcc_gpio);
+	chan->vcc_gpio = -1;
+}
+
 static int ldb_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -766,6 +823,8 @@ static int ldb_probe(struct platform_device *pdev)
 		chan->chno = i;
 		chan->ldb = ldb;
 		chan->online = true;
+
+		ldb_powerup_gpio(dev, child, chan);
 
 		is_primary = of_property_read_bool(child, "primary");
 
