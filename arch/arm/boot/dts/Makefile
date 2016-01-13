@@ -164,6 +164,12 @@ dtb-$(CONFIG_ARCH_MXC) += \
 	imx6dl-sabresd-ldo.dtb \
 	imx6dl-sabresd-pf200.dtb \
 	imx6dl-sabresd-hdcp.dtb \
+	imx6dl-tinto.dtb \
+	imx6dl-tinto-enetirq.dtb \
+	imx6dl-tinto-ldo.dtb \
+	imx6dl-tinto-pf200.dtb \
+	imx6dl-tinto-hdcp.dtb \
+	imx6dl-tinto-evt.dtb \
 	imx6dl-wandboard.dtb \
 	imx6q-arm2.dtb \
 	imx6q-cubox-i.dtb \
