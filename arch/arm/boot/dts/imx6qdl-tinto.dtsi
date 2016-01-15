@@ -62,7 +62,7 @@
 		};
 
 		/* 12.5 KHz to 33 KHz, 20 KHz */
-		whilte-led {
+		white-led {
 			pwms = <&pwm4 0 50000>;
 			max-brightness = <255>;
 		};
