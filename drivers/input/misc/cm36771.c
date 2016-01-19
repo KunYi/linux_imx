@@ -423,9 +423,8 @@ static int als_power(int enable)
 	struct cm36771_info *lpi = lp_info;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,1,0)
-#if 0 // HW power up
-	gpio_set_value(lpi->pwr_pin, ((enable)? 1: 0));
-#endif // HW power up
+	if(gpio_is_valid(lpi->pwr_pin))
+		gpio_set_value(lpi->pwr_pin, ((enable)? 1: 0));
 #else
 	if (lpi->power)
 		lpi->power(LS_PWR_ON, 1);
@@ -1161,23 +1160,23 @@ static int cm36771_setup(struct cm36771_info *lpi)
 	int ret = 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,1,0)
-#if 0 // HW power up
-	ret = gpio_request(lpi->pwr_pin, "gpio_cm36771_pwr");
-	if(ret < 0) {
-		pr_err("[PS][CM36771 error]%s: gpio %d request failed (%d)\n",
-			__func__, lpi->pwr_pin, ret);
-		return ret;
-	}
+	if(gpio_is_valid(lpi->pwr_pin)) {
+		ret = gpio_request(lpi->pwr_pin, "gpio_cm36771_pwr");
+		if(ret < 0) {
+			pr_err("[PS][CM36771 error]%s: gpio %d request failed (%d)\n",
+				__func__, lpi->pwr_pin, ret);
+			return ret;
+		}
 
-	ret = gpio_direction_input(lpi->pwr_pin);
-	if (ret < 0)
-	{
-		pr_err(
-			"[PS][CM36771 error]%s: fail to set gpio %d as input (%d)\n",
-			__func__, lpi->pwr_pin, ret);
-		goto fail_free_pwr_pin;
+		ret = gpio_direction_output(lpi->pwr_pin, 0);
+		if (ret < 0)
+		{
+			pr_err(
+				"[PS][CM36771 error]%s: fail to set gpio %d as input (%d)\n",
+				__func__, lpi->pwr_pin, ret);
+			goto fail_free_pwr_pin;
+		}
 	}
-#endif // HW power up
 #endif
 
 	als_power(1);
@@ -1235,7 +1234,8 @@ fail_free_intr_pin:
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,1,0)
 fail_free_pwr_pin:
-	gpio_free(lpi->pwr_pin);
+	if(gpio_is_valid(lpi->pwr_pin))
+		gpio_free(lpi->pwr_pin);
 #endif
 
 	return ret;
