@@ -967,6 +967,47 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 	if (of_find_property(np, "enable-sdio-wakeup", NULL))
 		host->mmc->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
 
+	// turn on wifi power
+	{
+		int ret;
+		int wifi_power = of_get_named_gpio(np, "wifi-power", 0);
+		int wifi_reset = of_get_named_gpio(np, "wifi-reset", 0);
+		int bt_reset = of_get_named_gpio(np, "bt-reset", 0);
+
+		if (gpio_is_valid(wifi_power)) {
+			printk(">>>>> %s, %d: enable wifi_power %d\n", __FILE__, __LINE__, wifi_power);
+			ret = gpio_request(wifi_power, "wifi power");
+			if (ret) {
+				dev_err(mmc_dev(host->mmc),	"failed to request wifi-power gpio!\n");
+			} else {
+				ret = gpio_direction_output(wifi_power, 0);
+				gpio_free(wifi_power);
+			}
+		}
+
+		if (gpio_is_valid(wifi_reset)) {
+			printk(">>>>> %s, %d: enable wifi_reset %d\n", __FILE__, __LINE__, wifi_reset);
+			ret = gpio_request(wifi_reset, "wifi reset");
+			if (ret) {
+				dev_err(mmc_dev(host->mmc),	"failed to request wifi-reset gpio!\n");
+			} else {
+				gpio_direction_output(wifi_reset, 0);
+				gpio_free(wifi_reset);
+			}
+		}
+
+		if (gpio_is_valid(bt_reset)) {
+			printk(">>>>> %s, %d: enable bt_reset %d\n", __FILE__, __LINE__, bt_reset);
+			ret = gpio_request(bt_reset, "bt reset");
+			if (ret) {
+				dev_err(mmc_dev(host->mmc),	"failed to request bt-reset gpio!\n");
+			} else {
+				gpio_direction_output(bt_reset, 0);
+				gpio_free(bt_reset);
+			}
+		}
+	}
+
 	return 0;
 }
 #else

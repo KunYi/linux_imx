@@ -64,8 +64,8 @@ int bcm_wlan_set_power(bool on)
 
 #if defined(ENABLE_TINTO)
 	if(init_gpio == 0) {
-		gpio_request(TINTO_WIFI_RST, "TINTO_WIFI_RST");
-		gpio_direction_output(TINTO_WIFI_RST, 0);
+		//gpio_request(TINTO_WIFI_RST, "TINTO_WIFI_RST");
+		//gpio_direction_output(TINTO_WIFI_RST, 1);
 		mdelay(100);
 		init_gpio = 1;
 	}
@@ -78,8 +78,8 @@ int bcm_wlan_set_power(bool on)
 #endif
 
 #if defined(ENABLE_TINTO)
-		printk(">>>>> %s, %d: set %d to 1\n", __FILE__, __LINE__, TINTO_WIFI_RST);
-		gpio_set_value(TINTO_WIFI_RST, 1);
+		printk(">>>>> %s, %d: set %d to 0\n", __FILE__, __LINE__, TINTO_WIFI_RST);
+		//gpio_set_value(TINTO_WIFI_RST, 0);
 #endif
 
 		/* Lets customer power to get stable */
@@ -91,8 +91,8 @@ int bcm_wlan_set_power(bool on)
 #endif
 
 #if defined(ENABLE_TINTO)
-		printk(">>>>> %s, %d: set %d to 0\n", __FILE__, __LINE__, TINTO_WIFI_RST);
-		gpio_set_value(TINTO_WIFI_RST, 0);
+		printk(">>>>> %s, %d: set %d to 1\n", __FILE__, __LINE__, TINTO_WIFI_RST);
+		//gpio_set_value(TINTO_WIFI_RST, 1);
 #endif
 	}
 
