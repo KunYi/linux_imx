@@ -322,8 +322,16 @@
 	pinctrl-0 = <&pinctrl_i2c1>;
 	status = "okay";
 
-	/* wm8753 */
 	/* nfc */
+	nxp_pn544@28 {
+		compatible = "nxp,pn544_i2c";
+		reg = <0x28>;
+		irq-gpios = <&gpio5 31 0>;
+		enable-gpios = <&gpio1 5 0>;
+		firmware-gpios = <&gpio6 3 0>;
+	};
+
+	/* wm8753 */
 };
 
 &i2c2 {

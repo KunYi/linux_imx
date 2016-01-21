@@ -22,6 +22,8 @@
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/gpio.h>
+#include <linux/of_platform.h>
+#include <linux/of_gpio.h>
 #include <linux/miscdevice.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -677,6 +679,152 @@ exit_state_wait_check_answer:
 	}
 }
 
+#ifdef CONFIG_OF
+
+int pn544_nfc_of_gpios[3];
+
+int pn544_nfc_of_request_resources(struct i2c_client *client)
+{
+	struct device_node *pp;
+	int gpio[3];
+	int irq;
+	int ret;
+	int i;
+
+	pp = client->dev.of_node;
+	if (!pp) {
+		ret = -ENODEV;
+		goto err_dt;
+	}
+
+	/* Get GPIO from device tree */
+	gpio[NFC_GPIO_ENABLE] = of_get_named_gpio(pp, "enable-gpios", 0);
+	gpio[NFC_GPIO_FW_RESET] = of_get_named_gpio(pp, "firmware-gpios", 0);
+	gpio[NFC_GPIO_IRQ] = of_get_named_gpio(pp, "irq-gpios", 0);
+	printk(">>>>> %s, %d: NFC_GPOI_IRQ = %d\n", __FILE__, __LINE__, of_get_named_gpio(pp, "irq-gpios", 0));
+	for (i=0; i<3; i++) {
+		printk(">>>>> %s, %d: gpio[%d] = %d\n", __FILE__, __LINE__, i, gpio[i]);
+		if (gpio[i] < 0) {
+			ret = gpio[i];
+			if (ret != -EPROBE_DEFER)
+				nfc_err(&client->dev, "Failed to get gpio %d, error: %d\n", i, ret);
+			goto err_dt;
+		}
+		pn544_nfc_of_gpios[i] = gpio[i];
+	}
+
+	/* GPIO request and configuration */
+	ret = gpio_request(gpio[NFC_GPIO_FW_RESET], "pn544_fw");
+	if (ret) {
+		nfc_err(&client->dev, "Fail FW pin\n");
+		goto err_dt;
+	}
+	ret = gpio_direction_output(gpio[NFC_GPIO_FW_RESET], 0);
+	if (ret) {
+		nfc_err(&client->dev, "Fail FW pin direction\n");
+		goto err_dt;
+	}
+
+	ret = gpio_request(gpio[NFC_GPIO_ENABLE], "pn544_en");
+	if (ret) {
+		nfc_err(&client->dev, "Fail EN pin\n");
+		goto err_gpio_en;
+	}
+	ret = gpio_direction_output(gpio[NFC_GPIO_ENABLE], 0);
+	if (ret) {
+		nfc_err(&client->dev, "Fail EN pin direction\n");
+		goto err_gpio_en;
+	}
+
+	ret = gpio_request(gpio[NFC_GPIO_IRQ], "pn544_irq");
+	if (ret) {
+		nfc_err(&client->dev, "Fail IRQ pin\n");
+		goto err_gpio_irq;
+	}
+	ret = gpio_direction_input(gpio[NFC_GPIO_IRQ]);
+	if (ret) {
+		nfc_err(&client->dev, "Fail IRQ pin direction\n");
+		goto err_gpio_irq;
+	}
+
+	/* IRQ */
+	irq = gpio_to_irq(gpio[NFC_GPIO_IRQ]);
+	if (irq < 0) {
+		ret = irq;
+		nfc_err(&client->dev,
+			"Unable to get irq number for GPIO %d, error %d\n",
+			gpio[NFC_GPIO_IRQ], ret);
+		goto err_irq;
+	}
+	client->irq = irq;
+
+	return 0;
+
+err_irq:
+	gpio_free(gpio[NFC_GPIO_IRQ]);
+err_gpio_irq:
+	gpio_free(gpio[NFC_GPIO_ENABLE]);
+err_gpio_en:
+	gpio_free(gpio[NFC_GPIO_FW_RESET]);
+err_dt:
+	return ret;
+}
+
+void pn544_nfc_of_free_resources(void)
+{
+	gpio_free(pn544_nfc_of_gpios[NFC_GPIO_ENABLE]);
+	gpio_free(pn544_nfc_of_gpios[NFC_GPIO_FW_RESET]);
+	gpio_free(pn544_nfc_of_gpios[NFC_GPIO_IRQ]);
+}
+
+int pn544_nfc_of_get_gpio(int type)
+{
+	return pn544_nfc_of_gpios[type];
+}
+
+void pn544_nfc_of_enable(void)
+{
+	printk(">>>>> %s, %d: +%s()", __FILE__, __LINE__, __FUNCTION__);
+	gpio_set_value(pn544_nfc_of_gpios[NFC_GPIO_ENABLE], 1);
+}
+
+void pn544_nfc_of_disable(void)
+{
+	printk(">>>>> %s, %d: +%s()", __FILE__, __LINE__, __FUNCTION__);
+	gpio_set_value(pn544_nfc_of_gpios[NFC_GPIO_ENABLE], 0);
+}
+
+static struct pn544_nfc_platform_data *
+pn544_hci_i2c_get_devtree_pdata(struct device *dev)
+{
+	struct pn544_nfc_platform_data *pdata;
+
+	pdata = (struct pn544_nfc_platform_data*) kzalloc(
+			sizeof(struct pn544_nfc_platform_data), GFP_KERNEL);
+	if (!pdata) {
+		return ERR_PTR(-ENOMEM);
+	}
+
+	pdata->request_resources = pn544_nfc_of_request_resources;
+	pdata->free_resources = pn544_nfc_of_free_resources;
+	pdata->enable = pn544_nfc_of_enable;
+	pdata->test = NULL;
+	pdata->disable = pn544_nfc_of_disable;
+	pdata->get_gpio = pn544_nfc_of_get_gpio;
+
+	return pdata;
+}
+
+#else
+
+static inline struct pn544_nfc_platform_data *
+pn544_hci_i2c_get_devtree_pdata(struct device *dev)
+{
+	return ERR_PTR(-ENODEV);
+}
+
+#endif
+
 static int pn544_hci_i2c_probe(struct i2c_client *client,
 			       const struct i2c_device_id *id)
 {
@@ -708,8 +856,11 @@ static int pn544_hci_i2c_probe(struct i2c_client *client,
 
 	pdata = client->dev.platform_data;
 	if (pdata == NULL) {
-		nfc_err(&client->dev, "No platform data\n");
-		return -EINVAL;
+		pdata = pn544_hci_i2c_get_devtree_pdata(&client->dev);
+		if (IS_ERR(pdata)) {
+			nfc_err(&client->dev, "No platform data\n");
+			return PTR_ERR(pdata);
+		}
 	}
 
 	if (pdata->request_resources == NULL) {
@@ -779,9 +930,17 @@ static int pn544_hci_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+static const struct of_device_id of_gpio_repeat_match[] = {
+	{ .compatible = "nxp,pn544_i2c", },
+	{},
+};
+MODULE_DEVICE_TABLE(of, of_gpio_repeat_match);
+
 static struct i2c_driver pn544_hci_i2c_driver = {
 	.driver = {
 		   .name = PN544_HCI_I2C_DRIVER_NAME,
+		   .owner  = THIS_MODULE,
+		   .of_match_table = of_match_ptr(of_gpio_repeat_match),
 		  },
 	.probe = pn544_hci_i2c_probe,
 	.id_table = pn544_hci_i2c_id_table,
