@@ -449,7 +449,7 @@
 };
 
 &i2c3 {
-	clock-frequency = <100000>;
+	clock-frequency = <400000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
@@ -459,7 +459,6 @@
 		reg = <0x2a>;
 		interrupt-parent = <&gpio6>;
 		interrupts = <7 2>;
-		wakeup-gpios = <&gpio6 7 0>;
 		int-gpios = <&gpio6 7 0>;
 	};
 };

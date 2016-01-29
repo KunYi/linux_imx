@@ -168,7 +168,6 @@ dtb-$(CONFIG_ARCH_MXC) += \
 	imx6dl-tinto-enetirq.dtb \
 	imx6dl-tinto-ldo.dtb \
 	imx6dl-tinto-pf200.dtb \
-	imx6dl-tinto-hdcp.dtb \
 	imx6dl-tinto-evt.dtb \
 	imx6dl-wandboard.dtb \
 	imx6q-arm2.dtb \
